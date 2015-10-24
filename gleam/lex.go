@@ -1,57 +1,55 @@
 package gleam
 
 import (
-	"fmt"
 	"strings"
 	"unicode/utf8"
 )
 
-type item struct {
-	typ itemType
+type token struct {
+	typ tokenType
 	val string
 }
 
-func (i item) String() string {
-	switch i.typ {
-	case itemEOF:
+func (t token) String() string {
+	switch t.typ {
+	case tokenEOF:
 		return "EOF"
 	}
 
-	return i.val
+	return t.val
 }
 
-type itemType int
+type tokenType int
 
 const (
-	itemError itemType = iota
-	itemEOF
+	tokenError tokenType = iota
+	tokenEOF
 
-	itemLeftParen
-	itemRightParen
-	itemNumber
-	itemSymbol
+	tokenLeftParen
+	tokenRightParen
+	tokenNumber
+	tokenSymbol
 )
 
 const eof = -1
 
 type lexer struct {
 	input      string
-	start      int // start position of this item
+	start      int // start position of this token
 	pos        int // current position in the input
 	width      int // width of the last rune read from input
 	parenDepth int
-	items      chan item
+	tokens     []token
 }
 
-func lex(input string) (*lexer, chan item) {
+func lex(input string) []token {
 	l := &lexer{
 		input: input,
-		items: make(chan item),
 	}
 
-	go l.run()
+	l.run()
 
-	return l, l.items
+	return l.tokens
 }
 
 // stateFn represents the current state and returns the next
@@ -62,12 +60,10 @@ func (l *lexer) run() {
 	for state := lexWhitespace; state != nil; {
 		state = state(l)
 	}
-
-	close(l.items) // no more tokens will be sent
 }
 
-func (l *lexer) emit(t itemType) {
-	l.items <- item{t, l.input[l.start:l.pos]}
+func (l *lexer) emit(t tokenType) {
+	l.tokens = append(l.tokens, token{t, l.input[l.start:l.pos]})
 	l.start = l.pos
 }
 
@@ -125,24 +121,13 @@ func (l *lexer) acceptUntil(p runePredicate) {
 	l.backup()
 }
 
-// errorf emits an error token and returns a nil stateFn to end lexing
-func (l *lexer) errorf(format string, args ...interface{}) stateFn {
-	l.items <- item{itemError, fmt.Sprintf(format, args...)}
-
-	return nil
-}
-
 // lexWhitespace is the initial stateFn, eating up whitespace
 // until something more interesting comes along or we finish
 func lexWhitespace(l *lexer) stateFn {
 	for {
 		switch r := l.next(); {
 		case r == eof:
-			if l.parenDepth != 0 {
-				return l.errorf("unclosed left paren")
-			}
-
-			l.emit(itemEOF)
+			l.emit(tokenEOF)
 
 			return nil
 		case isWhitespace(r):
@@ -173,18 +158,14 @@ func lexWhitespace(l *lexer) stateFn {
 
 func lexLeftParen(l *lexer) stateFn {
 	l.parenDepth++
-	l.emit(itemLeftParen)
+	l.emit(tokenLeftParen)
 
 	return lexWhitespace
 }
 
 func lexRightParen(l *lexer) stateFn {
-	if l.parenDepth == 0 {
-		return l.errorf("unexpected right paren")
-	}
-
 	l.parenDepth--
-	l.emit(itemRightParen)
+	l.emit(tokenRightParen)
 
 	return lexWhitespace
 }
@@ -199,17 +180,17 @@ func lexNumber(l *lexer) stateFn {
 		l.acceptRun(digits)
 	}
 
-	l.emit(itemNumber)
+	l.emit(tokenNumber)
 
 	return lexWhitespace
 }
 
 func lexSymbol(l *lexer) stateFn {
 	l.acceptUntil(func(r rune) bool {
-		return isWhitespace(r) || r == eof
+		return isWhitespace(r) || r == ')' || r == eof
 	})
 
-	l.emit(itemSymbol)
+	l.emit(tokenSymbol)
 
 	return lexWhitespace
 }

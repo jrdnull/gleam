@@ -4,72 +4,94 @@ import "testing"
 
 var lexTests = []struct {
 	in  string
-	out []item
+	out []token
 }{
-	{"()", []item{
-		item{itemLeftParen, "("},
-		item{itemRightParen, ")"},
-		item{itemEOF, ""},
+	{"()", []token{
+		token{tokenLeftParen, "("},
+		token{tokenRightParen, ")"},
+		token{tokenEOF, ""},
 	}},
-	{"(", []item{
-		item{itemLeftParen, "("},
-		item{itemError, "unclosed left paren"},
+	{"(", []token{
+		token{tokenLeftParen, "("},
+		token{tokenEOF, ""},
 	}},
-	{")", []item{
-		item{itemError, "unexpected right paren"},
+	{")", []token{
+		token{tokenRightParen, ")"},
+		token{tokenEOF, ""},
 	}},
-	{"123", []item{
-		item{itemNumber, "123"},
-		item{itemEOF, ""},
+	{"123", []token{
+		token{tokenNumber, "123"},
+		token{tokenEOF, ""},
 	}},
-	{"123", []item{
-		item{itemNumber, "123"},
-		item{itemEOF, ""},
+	{"123", []token{
+		token{tokenNumber, "123"},
+		token{tokenEOF, ""},
 	}},
-	{"+123", []item{
-		item{itemNumber, "+123"},
-		item{itemEOF, ""},
+	{"+123", []token{
+		token{tokenNumber, "+123"},
+		token{tokenEOF, ""},
 	}},
-	{"-123", []item{
-		item{itemNumber, "-123"},
-		item{itemEOF, ""},
+	{"-123", []token{
+		token{tokenNumber, "-123"},
+		token{tokenEOF, ""},
 	}},
-	{"123.456", []item{
-		item{itemNumber, "123.456"},
-		item{itemEOF, ""},
+	{"123.456", []token{
+		token{tokenNumber, "123.456"},
+		token{tokenEOF, ""},
 	}},
-	{"foo", []item{
-		item{itemSymbol, "foo"},
-		item{itemEOF, ""},
+	{"foo", []token{
+		token{tokenSymbol, "foo"},
+		token{tokenEOF, ""},
 	}},
-	{"+ 1234", []item{
-		item{itemSymbol, "+"},
-		item{itemNumber, "1234"},
-		item{itemEOF, ""},
+	{"+ 1234", []token{
+		token{tokenSymbol, "+"},
+		token{tokenNumber, "1234"},
+		token{tokenEOF, ""},
 	}},
-	{"(* 2 (+ 5 7))", []item{
-		item{itemLeftParen, "("},
-		item{itemSymbol, "*"},
-		item{itemNumber, "2"},
-		item{itemLeftParen, "("},
-		item{itemSymbol, "+"},
-		item{itemNumber, "5"},
-		item{itemNumber, "7"},
-		item{itemRightParen, ")"},
-		item{itemRightParen, ")"},
-		item{itemEOF, ""},
+	{"(* 2 (+ 5 7))", []token{
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "*"},
+		token{tokenNumber, "2"},
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "+"},
+		token{tokenNumber, "5"},
+		token{tokenNumber, "7"},
+		token{tokenRightParen, ")"},
+		token{tokenRightParen, ")"},
+		token{tokenEOF, ""},
+	}},
+	{"(foo bar)", []token{
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "foo"},
+		token{tokenSymbol, "bar"},
+		token{tokenRightParen, ")"},
+		token{tokenEOF, ""},
+	}},
+	{"(foo bar baz)", []token{
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "foo"},
+		token{tokenSymbol, "bar"},
+		token{tokenSymbol, "baz"},
+		token{tokenRightParen, ")"},
+		token{tokenEOF, ""},
+	}},
+	{"(foo bar (baz qux 7))", []token{
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "foo"},
+		token{tokenSymbol, "bar"},
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "baz"},
+		token{tokenSymbol, "qux"},
+		token{tokenNumber, "7"},
+		token{tokenRightParen, ")"},
+		token{tokenRightParen, ")"},
+		token{tokenEOF, ""},
 	}},
 }
 
 func TestLex(t *testing.T) {
 	for _, lt := range lexTests {
-		_, items := lex(lt.in)
-
-		var tokens []item
-		for i := range items {
-			tokens = append(tokens, i)
-		}
-
+		tokens := lex(lt.in)
 		if len(tokens) != len(lt.out) {
 			t.Errorf("lex(%q) = %v, want %v", lt.in, tokens, lt.out)
 			continue

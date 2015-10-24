@@ -1,7 +1,18 @@
 package main
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"os"
+
+	"github.com/jrdnull/gleam/gleam"
+)
 
 func main() {
-	fmt.Println("Hello, Gleam!")
+	r := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("gleam> ")
+		line, _ := r.ReadString('\n')
+		fmt.Println(gleam.Eval(line))
+	}
 }
