@@ -87,6 +87,40 @@ var lexTests = []struct {
 		token{tokenRightParen, ")"},
 		token{tokenEOF, ""},
 	}},
+	{"(-)", []token{
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "-"},
+		token{tokenRightParen, ")"},
+		token{tokenEOF, ""},
+	}},
+	{"(+)", []token{
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "+"},
+		token{tokenRightParen, ")"},
+		token{tokenEOF, ""},
+	}},
+	{"(*)", []token{
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "*"},
+		token{tokenRightParen, ")"},
+		token{tokenEOF, ""},
+	}},
+	{"(+ (+ 1 2) (+ 3 3))", []token{
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "+"},
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "+"},
+		token{tokenNumber, "1"},
+		token{tokenNumber, "2"},
+		token{tokenRightParen, ")"},
+		token{tokenLeftParen, "("},
+		token{tokenSymbol, "+"},
+		token{tokenNumber, "3"},
+		token{tokenNumber, "3"},
+		token{tokenRightParen, ")"},
+		token{tokenRightParen, ")"},
+		token{tokenEOF, ""},
+	}},
 }
 
 func TestLex(t *testing.T) {

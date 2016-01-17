@@ -3,6 +3,7 @@ package gleam
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 type nodeType int
@@ -41,11 +42,11 @@ func (n *symbolNode) String() string {
 }
 
 type numberNode struct {
-	val string
+	val float64
 }
 
 func (n *numberNode) String() string {
-	return n.val
+	return strconv.FormatFloat(n.val, 'g', -1, 64)
 }
 
 type parser struct {
@@ -60,7 +61,8 @@ func parse(tokens []token) (node, error) {
 		tokens: tokens,
 		pos:    -1,
 	}
-	fmt.Printf("%#v\n", tokens) // output for debug
+	// fmt.Println("tokens:")
+	// pretty.Println(tokens)
 
 	node, err := parser.parse()
 	if err != nil {
@@ -80,6 +82,7 @@ func (p *parser) parse() (node, error) {
 			if next == tokenEOF {
 				return nil, errors.New("unclosed left paren")
 			} else if next == tokenRightParen {
+				p.pos++
 				break
 			}
 
@@ -94,7 +97,11 @@ func (p *parser) parse() (node, error) {
 	case tokenRightParen:
 		return nil, errors.New("unexpected right paren")
 	case tokenNumber:
-		return &numberNode{val: t.val}, nil
+		f, err := strconv.ParseFloat(t.val, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse number: %s", err)
+		}
+		return &numberNode{val: f}, nil
 	case tokenSymbol:
 		return &symbolNode{val: t.val}, nil
 	default:

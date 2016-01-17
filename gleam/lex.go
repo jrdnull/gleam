@@ -139,9 +139,9 @@ func lexWhitespace(l *lexer) stateFn {
 		case r == '(':
 			return lexLeftParen
 		case '0' <= r && r <= '9', r == '+' || r == '-':
-			if (r == '+' || r == '-') && isWhitespace(l.peek()) {
+			if (r == '+' || r == '-') &&
+				(isWhitespace(l.peek()) || l.peek() == ')') {
 				l.backup()
-
 				return lexSymbol
 			}
 
