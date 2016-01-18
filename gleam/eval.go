@@ -41,6 +41,8 @@ var env = map[string]fun{
 	},
 }
 
+var userEnv = make(map[string]node)
+
 func reduceNumbers(ns []node, f func(acc, n float64) float64, initial float64) (node, error) {
 	acc := initial
 	for _, n := range ns {
@@ -77,9 +79,17 @@ func eval(n node) (node, error) {
 		}
 
 		if s, ok := n.nodes[0].(*symbolNode); ok {
+			if s.val == "define" {
+				if len(n.nodes) != 3 {
+					return nil, errors.New("expected identifier and expression")
+				}
+				userEnv[n.nodes[1].String()] = n.nodes[2]
+				return n, nil
+			}
+
 			f, ok := env[s.val]
 			if !ok {
-				return nil, errors.New("unbound func")
+				return nil, fmt.Errorf("%s undefined", s.val)
 			}
 			var args []node
 			for _, childNode := range n.nodes[1:] {
@@ -92,6 +102,11 @@ func eval(n node) (node, error) {
 			return f(args...)
 		}
 		return n, nil
+	case *symbolNode:
+		if n, ok := userEnv[n.val]; ok {
+			return n, nil
+		}
+		return nil, fmt.Errorf("%s undefined", n.val)
 	default:
 		return n, nil
 	}
